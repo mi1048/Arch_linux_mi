@@ -14,14 +14,19 @@ when you boot your machine it will show something like this
 root@archiso ~ #
 ```
 
-So to show your ip adress
+So to show your ip adress (you need the interface name of your wifi adapter)
 
 ```bash
 root@archiso ~ # ip addr show
 ```
 
-you need the interface name of your wifi adapter
+Setting up wifi
 
+```bash
+root@archiso ~ # iwctl
+```
+
+this command is gonna activate another command prompt that is specific to wifi
 
 
 If need any help you can go to archwiki
