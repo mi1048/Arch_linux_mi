@@ -8,7 +8,7 @@ An bash script to install Arch Linux
 
 ## 3 - Connect ArchLinux to wifi(if you dont have a wired connection to your computer)
 
-when you boot your machine it will show something like this
+When you boot your machine it will show something like this
 
 ```bash
 root@archiso ~ #
@@ -26,7 +26,38 @@ Setting up wifi
 root@archiso ~ # iwctl
 ```
 
-this command is gonna activate another command prompt that is specific to wifi
+This command is gonna activate another command prompt that is specific to wifi it would look like this
+
+```bash
+[iwd]#
+```
+
+After that type this command
+
+```bash
+[iwd]# station nameofyourwifi get-networks
+```
+
+what this should do tell which wifi work on your area
+
+Then you exit from this prompt
+
+```bash
+[iwd]# exit
+```
+
+Thereafter you should be back to archlinux prompt, so type
+
+```bash
+root@archiso ~ # iwctl --passphrase "yourwifipassphrase" station interfacename connect nameofwifinetwork
+```
+
+To test if this was sucessful do
+
+```bash
+root@archiso ~ # ip addr show
+```
+
 
 
 If need any help you can go to archwiki
