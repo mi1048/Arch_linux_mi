@@ -58,6 +58,21 @@ To test if this was sucessful do
 root@archiso ~ # ip addr show
 ```
 
+## 4 - SSH to make installation easier(optional)
+
+In order for you to use SSH you have to enable it
+
+```bash
+root@archiso ~ # systemctl status sshd
+```
+
+if nothing come to do with the ssh server itself you can continue
+
+```bash
+root@archiso ~ # systemctl start sshd
+```
+
+that command it would make sure that ssh its listening for connections
 
 
 If need any help you can go to archwiki
