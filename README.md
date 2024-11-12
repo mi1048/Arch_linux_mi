@@ -122,6 +122,67 @@ Leave at it is
 
 6 - Bootloader
 
-Leave at it is 
+Leave at it is
+
+7 - Unified kernel images
+
+Leave at it is
+
+8 - Swap
+
+Leave at it is
+
+9 - Root Password 
+
+Set your root password
+
+10 - User Account
+
+Create your own user account
+
+11 - Profile
+
+So choose what type of installation is this
+
+After that choose the graphics driver(choose your gpu driver)
+
+Next choose Greeter gdm
+
+12 - Audio
+
+Afterwards on audio choose Pipewire
+
+13 - Kernels
+
+Following that you need to choose the kernel on your system(I recommend 2 kernels)
+
+14 - Additional packages
+
+Leave at it is
+
+15 - Network Configuration
+
+Next choose Use NetworkManager
+
+16 - Timezone
+
+Consecutively find your desired Timezone
+
+17 - Automatic time sync
+
+It is import that this is enable if your gonna use sync utilities
+
+18 - Optional repositories
+
+Leave at it is
+
+Finally you can go to the install option to install the arch linux
+
+it will show the output of the settings you choosed if you want to automate in the future
+
+you installed via archinstall
+
+## 6 - Manual Method(More Complicated)
+
 
 If need any help you can go to archwiki
