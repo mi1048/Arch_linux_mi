@@ -1,2 +1,3 @@
-# Arch_linux_mi
+## Arch_linux_mi
+
 An bash script to install Arch Linux
