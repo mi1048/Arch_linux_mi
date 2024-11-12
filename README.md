@@ -180,7 +180,7 @@ Finally you can go to the install option to install the arch linux
 
 it will show the output of the settings you choosed if you want to automate in the future
 
-you installed via archinstall
+you installed via archinstall now youre ready to go
 
 ## 6 - Manual Method(More Complicated)
 
