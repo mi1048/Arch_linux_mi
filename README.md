@@ -74,5 +74,54 @@ root@archiso ~ # systemctl start sshd
 
 that command it would make sure that ssh its listening for connections
 
+As a result you will need to set a root password(by default ssh will not allow to connect with a root without password)
+
+```bash
+root@archiso ~ # passwd
+```
+
+note:This root password its just for the installer not the operating system
+
+## 5 - Installing Arch via the archinstall method(Less complicated)
+
+First start the arch linux installer
+
+```bash
+root@archiso ~ # archinstall
+```
+
+Now you just need to go each section one by one to configure your installation
+
+1 - Archinstall language(installer language not the operating system language)
+
+2 - Mirrors
+
+A mirror its where our software come from
+
+So select your region its closer to you
+
+3 - Locales
+
+Review the options
+
+4 - Disk Configuration
+
+So use the option("Use a best-effort default partition layout")
+
+Next choose the hardware you want to install arch linux to
+
+So choose the filesystem(I recommend ext4)
+
+Subsequently it will ask if you want a separate partition for /home so choose yes
+
+This will make sure that your own personal data are their own folder
+
+5 - Disk encryption
+
+Leave at it is
+
+6 - Bootloader
+
+Leave at it is 
 
 If need any help you can go to archwiki
