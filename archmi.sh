@@ -1,5 +1,5 @@
 #!/bin/bash
-#
+#teste
 # Verificar privilégios de root
 if [ "$(id -u)" -ne 0 ]; then
     echo "Este script deve ser executado como root!"
