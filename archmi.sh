@@ -8,7 +8,7 @@ fi
 
 echo "Bem-vindo ao instalador automatizado do Arch Linux!"
 
-# Função para validação de opções
+# Função para validação de entradas
 validate_option() {
     local input="$1"
     local options=("${!2}")
@@ -20,59 +20,60 @@ validate_option() {
     return 1
 }
 
-# Configuração de partições
-echo "Antes de continuar, configure suas partições. Escolha uma ferramenta para gerenciar as partições:"
-partition_tools=("fdisk" "parted")
-PS3="Escolha uma opção (1-${#partition_tools[@]}): "
-select partition_tool in "${partition_tools[@]}"; do
-    if validate_option "$partition_tool" partition_tools[@]; then
-        echo "Abrindo o $partition_tool..."
-        read -p "Informe o disco (ex.: /dev/sda): " drive
-        if [[ ! -b "$drive" ]]; then
-            echo "Dispositivo inválido. Saindo."
-            exit 1
-        fi
-        "$partition_tool" "$drive"
-        break
-    else
-        echo "Opção inválida. Tente novamente."
-    fi
-done
-
-# Montagem das partições
-echo "Certifique-se de ter criado e formatado as partições."
-read -p "Informe a partição raiz (ex.: /dev/sda1): " root_partition
-if [[ ! -b "$root_partition" ]]; then
-    echo "Partição raiz inválida. Saindo."
+# Particionamento automatizado
+read -p "Informe o disco para particionar automaticamente (ex.: /dev/sda): " drive
+if [[ ! -b "$drive" ]]; then
+    echo "Dispositivo inválido. Saindo."
     exit 1
 fi
-mount "$root_partition" /mnt
 
-read -p "Deseja configurar uma partição /boot separada? (s/n): " boot_choice
-if [[ "$boot_choice" =~ ^[Ss]$ ]]; then
-    read -p "Informe a partição /boot (ex.: /dev/sda2): " boot_partition
-    if [[ -b "$boot_partition" ]]; then
-        mkdir /mnt/boot
-        mount "$boot_partition" /mnt/boot
-    else
-        echo "Partição /boot inválida. Ignorando configuração."
-    fi
+echo "Iniciando particionamento automatizado no $drive..."
+
+# Confirmar antes de apagar tudo
+read -p "Isso irá apagar todos os dados no disco $drive. Deseja continuar? (s/n): " confirm
+if [[ ! "$confirm" =~ ^[Ss]$ ]]; then
+    echo "Operação cancelada."
+    exit 0
 fi
 
-read -p "Deseja configurar uma partição /home separada? (s/n): " home_choice
-if [[ "$home_choice" =~ ^[Ss]$ ]]; then
-    read -p "Informe a partição /home (ex.: /dev/sda3): " home_partition
-    if [[ -b "$home_partition" ]]; then
-        mkdir /mnt/home
-        mount "$home_partition" /mnt/home
-    else
-        echo "Partição /home inválida. Ignorando configuração."
-    fi
-fi
+# Comandos para criar partições automaticamente
+fdisk "$drive" <<EOF
+g       # Cria uma tabela de partição GPT
+n       # Nova partição (raiz)
+1       # Número da partição
+        # Setor inicial (padrão)
++20G    # Tamanho da partição (20GB para raiz)
+n       # Nova partição (swap)
+2       # Número da partição
+        # Setor inicial (padrão)
++2G     # Tamanho da partição (2GB para swap)
+n       # Nova partição (home)
+3       # Número da partição
+        # Setor inicial (padrão)
+        # Resto do disco
+w       # Escreve as alterações no disco
+EOF
 
-# Configuração de swap (manter a configuração existente do exemplo anterior)
+echo "Partições criadas com sucesso!"
 
-# Instalação do sistema base
+# Formatação das partições
+echo "Formatando as partições..."
+mkfs.ext4 "${drive}1"
+mkswap "${drive}2"
+mkfs.ext4 "${drive}3"
+
+# Ativação da swap
+swapon "${drive}2"
+
+# Montagem das partições
+echo "Montando as partições..."
+mount "${drive}1" /mnt
+mkdir /mnt/home
+mount "${drive}3" /mnt/home
+
+echo "Particionamento e montagem concluídos."
+
+# Continuar com o restante do script
 echo "Instalando o sistema base..."
 pacstrap /mnt base linux linux-firmware
 
@@ -127,9 +128,6 @@ else
     pacman -S --noconfirm xf86-video-vesa
 fi
 
-# Instalação de ambiente gráfico (manter configuração existente do exemplo anterior)
-
 EOF
 
-# Finalização
 echo "Instalação concluída! Reinicie o sistema para começar a usar seu Arch Linux."
