@@ -26,12 +26,18 @@ wipefs -a "$drive" || { echo "Erro ao limpar o disco."; exit 1; }
 parted "$drive" --script mklabel gpt || { echo "Erro ao criar tabela GPT."; exit 1; }
 
 # Criar partições com sfdisk
-echo "Criando partições no $drive..."
-sfdisk "$drive" <<EOF || { echo "Erro ao criar partições."; exit 1; }
-,30G,L
-,2G,S
-,512M,E
-,,L
+fdisk "$drive" <<EOF || { echo "Erro ao criar partições."; exit 1; }
+g       # Criar tabela de partições GPT
+n       # Nova partição
+        # Usar o tamanho padrão
++30G    # Partição 1 (30GB)
+n       # Nova partição
+        # Usar o tamanho padrão
++2G     # Partição 2 (2GB)
+n       # Nova partição
+        # Usar o tamanho padrão
+        # Resto do disco
+w       # Escrever as alterações
 EOF
 
 
