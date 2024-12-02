@@ -28,7 +28,7 @@ parted "$drive" --script mklabel gpt || { echo "Erro ao criar tabela GPT."; exit
 # Criar partições com sfdisk
 echo "Criando partições no $drive..."
 sfdisk "$drive" <<EOF || { echo "Erro ao criar partições."; exit 1; }
-,30G,L
+,70G,L
 ,2G,S
 ,,L
 EOF
