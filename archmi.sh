@@ -22,12 +22,12 @@ fi
 
 # Limpar o disco e criar tabela GPT
 echo "Preparando o disco $drive..."
-wipefs -a "$drive" # Apaga assinaturas antigas no disco
-parted "$drive" --script mklabel gpt # Cria a tabela GPT
+wipefs -a "$drive" || { echo "Erro ao limpar o disco."; exit 1; }
+parted "$drive" --script mklabel gpt || { echo "Erro ao criar tabela GPT."; exit 1; }
 
 # Criar partições com sfdisk
 echo "Criando partições no $drive..."
-sfdisk "$drive" <<EOF
+sfdisk "$drive" <<EOF || { echo "Erro ao criar partições."; exit 1; }
 ,30G,L
 ,2G,S
 ,,L
@@ -45,84 +45,56 @@ else
 fi
 
 # Verificar se as partições foram criadas corretamente
-if [[ ! -b "$part1" || ! -b "$part2" || ! -b "$part3" ]]; then
-    echo "Erro ao criar partições. Verifique o disco."
-    exit 1
-fi
+for part in "$part1" "$part2" "$part3"; do
+    if [[ ! -b "$part" ]]; then
+        echo "Partição $part não encontrada. Verifique o particionamento."
+        exit 1
+    fi
+done
 
 # Formatar partições
 echo "Formatando as partições..."
-mkfs.ext4 "$part1" # Partição ROOT
-mkswap "$part2"    # Partição SWAP
-mkfs.ext4 "$part3" # Partição HOME
+mkfs.ext4 "$part1" || { echo "Erro ao formatar $part1."; exit 1; }
+mkswap "$part2" || { echo "Erro ao formatar $part2."; exit 1; }
+mkfs.ext4 "$part3" || { echo "Erro ao formatar $part3."; exit 1; }
 
 # Ativar SWAP
-swapon "$part2"
+swapon "$part2" || { echo "Erro ao ativar SWAP."; exit 1; }
 
 # Montar partições
 echo "Montando as partições..."
-mount "$part1" /mnt
-mkdir -p /mnt/home
-mount "$part3" /mnt/home
+mount "$part1" /mnt || { echo "Erro ao montar $part1."; exit 1; }
+mkdir -p /mnt/home || { echo "Erro ao criar diretório /mnt/home."; exit 1; }
+mount "$part3" /mnt/home || { echo "Erro ao montar $part3."; exit 1; }
 
 echo "Particionamento e montagem concluídos com sucesso!"
 
 # Instalar o sistema base
 echo "Instalando o sistema base..."
-pacstrap /mnt base linux linux-firmware
+pacstrap /mnt base linux linux-firmware || { echo "Erro ao instalar o sistema base."; exit 1; }
 
 # Gerar fstab
 echo "Gerando o arquivo fstab..."
-genfstab -U /mnt >> /mnt/etc/fstab
+genfstab -U /mnt >> /mnt/etc/fstab || { echo "Erro ao gerar o fstab."; exit 1; }
 
-echo "Sistema base instalado e fstab gerado. Prossiga com a configuração."
-
-
-# Entrando no ambiente chroot
+# Entrar no ambiente chroot
 echo "Entrando no ambiente chroot..."
-arch-chroot /mnt /bin/bash <<EOF
+arch-chroot /mnt /bin/bash <<EOF || { echo "Erro ao entrar no ambiente chroot."; exit 1; }
 
 # Configuração de rede
-echo "Configurando rede. Escolha o gerenciador de rede:"
-network_tools=("NetworkManager" "iwd (Wi-Fi apenas)" "Nenhum")
-PS3="Escolha uma opção (1-${#network_tools[@]}): "
-select network_tool in "\${network_tools[@]}"; do
-    if validate_option "\$network_tool" network_tools[@]; then
-        case \$REPLY in
-            1)
-                echo "Instalando NetworkManager..."
-                pacman -S --noconfirm networkmanager
-                systemctl enable NetworkManager
-                ;;
-            2)
-                echo "Instalando iwd para Wi-Fi..."
-                pacman -S --noconfirm iwd
-                systemctl enable iwd
-                ;;
-            3)
-                echo "Nenhum gerenciador de rede será configurado."
-                ;;
-        esac
-        break
-    else
-        echo "Opção inválida. Tente novamente."
-    fi
-done
+pacman -S --noconfirm networkmanager || { echo "Erro ao instalar NetworkManager."; exit 1; }
+systemctl enable NetworkManager || { echo "Erro ao habilitar NetworkManager."; exit 1; }
 
-# Instalação de drivers proprietários
+# Instalação de drivers gráficos
 echo "Detectando drivers necessários..."
 if lspci | grep -i 'nvidia'; then
-    echo "NVIDIA detectada. Instalando drivers proprietários..."
-    pacman -S --noconfirm nvidia nvidia-utils nvidia-settings
+    pacman -S --noconfirm nvidia nvidia-utils nvidia-settings || { echo "Erro ao instalar drivers NVIDIA."; exit 1; }
 elif lspci | grep -i 'amd'; then
-    echo "AMD detectada. Instalando drivers de vídeo..."
-    pacman -S --noconfirm xf86-video-amdgpu
+    pacman -S --noconfirm xf86-video-amdgpu || { echo "Erro ao instalar drivers AMD."; exit 1; }
 elif lspci | grep -i 'intel'; then
-    echo "Intel detectada. Instalando drivers de vídeo..."
-    pacman -S --noconfirm xf86-video-intel
+    pacman -S --noconfirm xf86-video-intel || { echo "Erro ao instalar drivers Intel."; exit 1; }
 else
-    echo "Nenhuma placa gráfica dedicada detectada. Usando drivers padrão."
-    pacman -S --noconfirm xf86-video-vesa
+    pacman -S --noconfirm xf86-video-vesa || { echo "Erro ao instalar drivers genéricos."; exit 1; }
 fi
 
 EOF
