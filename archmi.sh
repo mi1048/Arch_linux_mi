@@ -38,21 +38,21 @@ fi
 
 # Comandos para criar partições automaticamente
 fdisk "$drive" <<EOF
-g       # Cria uma tabela de partição GPT
-n       # Nova partição (raiz)
-1       # Número da partição
-        # Setor inicial (padrão)
-+70G   # Tamanho da partição (70GB para raiz)
-n       # Nova partição (swap)
-2       # Número da partição
-        # Setor inicial (padrão)
-+2G     # Tamanho da partição (2GB para swap)
-n       # Nova partição (home)
-3       # Número da partição
-        # Setor inicial (padrão)
-        # Resto do disco
-w       # Escreve as alterações no disco
+g
+n
+
+
++30G
+n
+
+
++2G
+n
+
+
+w
 EOF
+
 
 echo "Partições criadas com sucesso!"
 
