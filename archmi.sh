@@ -23,12 +23,14 @@ fi
 # Limpar o disco e criar tabela GPT
 echo "Preparando o disco $drive..."
 wipefs -a "$drive" || { echo "Erro ao limpar o disco."; exit 1; }
+parted "$drive" --script mklabel gpt || { echo "Erro ao criar tabela GPT."; exit 1; }
+
+# Criar partições com sfdisk
+echo "Criando partições no $drive..."
 sfdisk "$drive" <<EOF || { echo "Erro ao criar partições."; exit 1; }
-# Criar partições
-label: gpt
-/dev/sda1    ; +512M ; EF00  # Partição EFI
-/dev/sda2    ; +80G   ; 8300  # Partição raiz
-/dev/sda3    ;         ; 8300  # Partição home
+,30G,L
+,2G,S
+,,L
 EOF
 
 # Mapear partições
@@ -52,21 +54,18 @@ done
 
 # Formatar partições
 echo "Formatando as partições..."
-mkfs.fat -F32 "$part1" || { echo "Erro ao formatar $part1."; exit 1; }
-mkfs.ext4 "$part2" || { echo "Erro ao formatar $part2."; exit 1; }
+mkfs.ext4 "$part1" || { echo "Erro ao formatar $part1."; exit 1; }
+mkswap "$part2" || { echo "Erro ao formatar $part2."; exit 1; }
 mkfs.ext4 "$part3" || { echo "Erro ao formatar $part3."; exit 1; }
 
 # Ativar SWAP
-mkswap "$part2" || { echo "Erro ao ativar SWAP."; exit 1; }
 swapon "$part2" || { echo "Erro ao ativar SWAP."; exit 1; }
 
 # Montar partições
 echo "Montando as partições..."
-mount "$part2" /mnt || { echo "Erro ao montar $part2."; exit 1; }
+mount "$part1" /mnt || { echo "Erro ao montar $part1."; exit 1; }
 mkdir -p /mnt/home || { echo "Erro ao criar diretório /mnt/home."; exit 1; }
 mount "$part3" /mnt/home || { echo "Erro ao montar $part3."; exit 1; }
-mkdir -p /mnt/boot/efi || { echo "Erro ao criar diretório /mnt/boot/efi."; exit 1; }
-mount "$part1" /mnt/boot/efi || { echo "Erro ao montar $part1."; exit 1; }
 
 echo "Particionamento e montagem concluídos com sucesso!"
 
@@ -78,20 +77,22 @@ pacstrap /mnt base linux linux-firmware || { echo "Erro ao instalar o sistema ba
 echo "Gerando o arquivo fstab..."
 genfstab -U /mnt >> /mnt/etc/fstab || { echo "Erro ao gerar o fstab."; exit 1; }
 
-# Entrar no ambiente chroot
-echo "Entrando no ambiente chroot..."
-arch-chroot /mnt /bin/bash <<EOF || { echo "Erro ao entrar no ambiente chroot."; exit 1; }
+# Instalar o GRUB (Bootloader)
+echo "Instalando o bootloader (GRUB)..."
+pacstrap /mnt grub os-prober || { echo "Erro ao instalar o GRUB."; exit 1; }
 
-# Instalar pacotes necessários
-pacman -S --noconfirm grub efibootmgr || { echo "Erro ao instalar GRUB ou efibootmgr."; exit 1; }
+# Instalar o GRUB no disco
+echo "Instalando o GRUB no disco $drive..."
+if [[ "$drive" =~ "nvme" ]]; then
+    grub-install --target=x86_64-efi --efi-directory=/mnt/boot --bootloader-id=grub --recheck || { echo "Erro ao instalar GRUB no disco $drive."; exit 1; }
+else
+    grub-install --target=i386-pc --recheck --bootloader-id=grub $drive || { echo "Erro ao instalar GRUB no disco $drive."; exit 1; }
+fi
 
-# Instalar o GRUB no modo UEFI
-grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=grub --recheck || { echo "Erro ao instalar GRUB no disco $drive."; exit 1; }
+# Gerar a configuração do GRUB
+echo "Gerando a configuração do GRUB..."
+arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg || { echo "Erro ao gerar a configuração do GRUB."; exit 1; }
 
-# Gerar o arquivo de configuração do GRUB
-grub-mkconfig -o /boot/grub/grub.cfg || { echo "Erro ao gerar o arquivo de configuração do GRUB."; exit 1; }
-
-EOF
 # Entrar no ambiente chroot
 echo "Entrando no ambiente chroot..."
 arch-chroot /mnt /bin/bash <<EOF || { echo "Erro ao entrar no ambiente chroot."; exit 1; }
