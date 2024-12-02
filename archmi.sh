@@ -77,11 +77,27 @@ pacstrap /mnt base linux linux-firmware || { echo "Erro ao instalar o sistema ba
 echo "Gerando o arquivo fstab..."
 genfstab -U /mnt >> /mnt/etc/fstab || { echo "Erro ao gerar o fstab."; exit 1; }
 
+# Instalar o GRUB (Bootloader)
+echo "Instalando o bootloader (GRUB)..."
+pacstrap /mnt grub os-prober || { echo "Erro ao instalar o GRUB."; exit 1; }
+
+# Instalar o GRUB no disco
+echo "Instalando o GRUB no disco $drive..."
+if [[ "$drive" =~ "nvme" ]]; then
+    grub-install --target=x86_64-efi --efi-directory=/mnt/boot --bootloader-id=grub --recheck || { echo "Erro ao instalar GRUB no disco $drive."; exit 1; }
+else
+    grub-install --target=i386-pc --recheck --bootloader-id=grub $drive || { echo "Erro ao instalar GRUB no disco $drive."; exit 1; }
+fi
+
+# Gerar a configuração do GRUB
+echo "Gerando a configuração do GRUB..."
+arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg || { echo "Erro ao gerar a configuração do GRUB."; exit 1; }
+
 # Entrar no ambiente chroot
 echo "Entrando no ambiente chroot..."
 arch-chroot /mnt /bin/bash <<EOF || { echo "Erro ao entrar no ambiente chroot."; exit 1; }
 
-# Configuração de rede
+# Instalar e configurar NetworkManager
 pacman -S --noconfirm networkmanager || { echo "Erro ao instalar NetworkManager."; exit 1; }
 systemctl enable NetworkManager || { echo "Erro ao habilitar NetworkManager."; exit 1; }
 
