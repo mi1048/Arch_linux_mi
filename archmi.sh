@@ -42,7 +42,7 @@ g       # Cria uma tabela de partição GPT
 n       # Nova partição (raiz)
 1       # Número da partição
         # Setor inicial (padrão)
-+20G    # Tamanho da partição (20GB para raiz)
++70G   # Tamanho da partição (70GB para raiz)
 n       # Nova partição (swap)
 2       # Número da partição
         # Setor inicial (padrão)
