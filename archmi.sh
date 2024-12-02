@@ -77,9 +77,6 @@ pacstrap /mnt base linux linux-firmware || { echo "Erro ao instalar o sistema ba
 echo "Gerando o arquivo fstab..."
 genfstab -U /mnt >> /mnt/etc/fstab || { echo "Erro ao gerar o fstab."; exit 1; }
 
-#outside of chroot
-arch-chroot /mnt /bin/bash
-
 # Instalar o GRUB (Bootloader)
 echo "Instalando o bootloader (GRUB)..."
 pacstrap /mnt grub os-prober || { echo "Erro ao instalar o GRUB."; exit 1; }
