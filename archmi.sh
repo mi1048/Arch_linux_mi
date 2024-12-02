@@ -1,85 +1,82 @@
 #!/bin/bash
 
-# Verificação de privilégios
+# Verificar privilégios de root
 if [ "$(id -u)" -ne 0 ]; then
     echo "Este script deve ser executado como root!"
     exit 1
 fi
 
-echo "Bem-vindo ao instalador automatizado do Arch Linux!"
-
-# Função para validação de entradas
-validate_option() {
-    local input="$1"
-    local options=("${!2}")
-    for opt in "${options[@]}"; do
-        if [ "$input" == "$opt" ]; then
-            return 0
-        fi
-    done
-    return 1
-}
-
-# Particionamento automatizado
+# Solicitar o disco
 read -p "Informe o disco para particionar automaticamente (ex.: /dev/sda): " drive
 if [[ ! -b "$drive" ]]; then
-    echo "Dispositivo inválido. Saindo."
+    echo "Dispositivo inválido. Verifique o nome do disco."
     exit 1
 fi
 
-echo "Iniciando particionamento automatizado no $drive..."
-
-# Confirmar antes de apagar tudo
-read -p "Isso irá apagar todos os dados no disco $drive. Deseja continuar? (s/n): " confirm
+# Confirmar destruição de dados
+read -p "Isso APAGARÁ TODOS os dados no disco $drive. Deseja continuar? (s/n): " confirm
 if [[ ! "$confirm" =~ ^[Ss]$ ]]; then
     echo "Operação cancelada."
     exit 0
 fi
 
-# Comandos para criar partições automaticamente
-fdisk "$drive" <<EOF
-g
-n
+# Limpar o disco e criar tabela GPT
+echo "Preparando o disco $drive..."
+wipefs -a "$drive" # Apaga assinaturas antigas no disco
+parted "$drive" --script mklabel gpt # Cria a tabela GPT
 
-
-+30G
-n
-
-
-+2G
-n
-
-
-w
+# Criar partições com sfdisk
+echo "Criando partições no $drive..."
+sfdisk "$drive" <<EOF
+,30G,L
+,2G,S
+,,L
 EOF
 
+# Mapear partições
+if [[ "$drive" =~ "nvme" ]]; then
+    part1="${drive}p1"
+    part2="${drive}p2"
+    part3="${drive}p3"
+else
+    part1="${drive}1"
+    part2="${drive}2"
+    part3="${drive}3"
+fi
 
-echo "Partições criadas com sucesso!"
+# Verificar se as partições foram criadas corretamente
+if [[ ! -b "$part1" || ! -b "$part2" || ! -b "$part3" ]]; then
+    echo "Erro ao criar partições. Verifique o disco."
+    exit 1
+fi
 
-# Formatação das partições
+# Formatar partições
 echo "Formatando as partições..."
-mkfs.ext4 "${drive}1"
-mkswap "${drive}2"
-mkfs.ext4 "${drive}3"
+mkfs.ext4 "$part1" # Partição ROOT
+mkswap "$part2"    # Partição SWAP
+mkfs.ext4 "$part3" # Partição HOME
 
-# Ativação da swap
-swapon "${drive}2"
+# Ativar SWAP
+swapon "$part2"
 
-# Montagem das partições
+# Montar partições
 echo "Montando as partições..."
-mount "${drive}1" /mnt
-mkdir /mnt/home
-mount "${drive}3" /mnt/home
+mount "$part1" /mnt
+mkdir -p /mnt/home
+mount "$part3" /mnt/home
 
-echo "Particionamento e montagem concluídos."
+echo "Particionamento e montagem concluídos com sucesso!"
 
-# Continuar com o restante do script
+# Instalar o sistema base
 echo "Instalando o sistema base..."
 pacstrap /mnt base linux linux-firmware
 
 # Gerar fstab
-echo "Gerando fstab..."
+echo "Gerando o arquivo fstab..."
 genfstab -U /mnt >> /mnt/etc/fstab
+
+echo "Sistema base instalado e fstab gerado. Prossiga com a configuração."
+
 
 # Entrando no ambiente chroot
 echo "Entrando no ambiente chroot..."
