@@ -81,6 +81,21 @@ genfstab -U /mnt >> /mnt/etc/fstab || { echo "Erro ao gerar o fstab."; exit 1; }
 echo "Entrando no ambiente chroot..."
 arch-chroot /mnt /bin/bash <<EOF || { echo "Erro ao entrar no ambiente chroot."; exit 1; }
 
+# Instalar o GRUB
+pacman -S --noconfirm grub efibootmgr || { echo "Erro ao instalar o GRUB."; exit 1; }
+
+# Detectar e configurar o GRUB (para UEFI ou BIOS)
+if [[ -d /sys/firmware/efi/efivars ]]; then
+    mkdir -p /boot/efi || { echo "Erro ao criar diretório /boot/efi."; exit 1; }
+    mount "$part1" /boot/efi || { echo "Erro ao montar a partição EFI."; exit 1; }
+    grub-install --target=x86_64-efi --bootloader-id=GRUB --efi-directory=/boot/efi --recheck || { echo "Erro ao instalar o GRUB no modo UEFI."; exit 1; }
+else
+    grub-install --target=i386-pc "$drive" --recheck || { echo "Erro ao instalar o GRUB no modo BIOS."; exit 1; }
+fi
+
+# Gerar configuração do GRUB
+grub-mkconfig -o /boot/grub/grub.cfg || { echo "Erro ao gerar a configuração do GRUB."; exit 1; }
+
 # Configuração de rede
 pacman -S --noconfirm networkmanager || { echo "Erro ao instalar NetworkManager."; exit 1; }
 systemctl enable NetworkManager || { echo "Erro ao habilitar NetworkManager."; exit 1; }
