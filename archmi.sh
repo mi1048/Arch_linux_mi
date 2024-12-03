@@ -84,6 +84,10 @@ arch-chroot /mnt /bin/bash <<EOF || { echo "Erro ao entrar no ambiente chroot.";
 # Instalar o GRUB
 pacman -S --noconfirm grub efibootmgr || { echo "Erro ao instalar o GRUB."; exit 1; }
 
+# Criando uma particao para o GRUB
+parted /dev/sdX --script mkpart bios_grub 1MiB 3MiB
+parted /dev/sdX --script set 1 bios_grub on
+
 # Detectar e configurar o GRUB (para UEFI ou BIOS)
 if [[ -d /sys/firmware/efi/efivars ]]; then
     mkdir -p /boot/efi || { echo "Erro ao criar diretório /boot/efi."; exit 1; }
